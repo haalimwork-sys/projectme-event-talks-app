@@ -12,6 +12,7 @@ let state = {
 
 // UI Elements
 const els = {
+    exportCsvBtn: document.getElementById('export-csv-btn'),
     refreshBtn: document.getElementById('refresh-btn'),
     refreshIcon: document.getElementById('refresh-icon'),
     statusBadge: document.getElementById('status-badge'),
@@ -62,9 +63,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Event Listeners
 function setupEventListeners() {
-    // Refresh button
+    // Refresh & Export buttons
     els.refreshBtn.addEventListener('click', () => fetchReleases(true));
     els.retryBtn.addEventListener('click', () => fetchReleases(true));
+    els.exportCsvBtn.addEventListener('click', exportToCSV);
+
+    // Copy to clipboard click delegation
+    els.timeline.addEventListener('click', (e) => {
+        const copyBtn = e.target.closest('.copy-card-btn');
+        if (copyBtn) {
+            const releaseId = copyBtn.dataset.id;
+            copyReleaseToClipboard(releaseId, copyBtn);
+        }
+    });
 
     // Search input (with debouncing)
     let searchDebounce;
@@ -296,11 +307,16 @@ function renderFeed() {
                         <i class="fa-regular fa-calendar-days"></i> ${item.date}
                     </span>
                 </div>
-                ${item.link ? `
-                    <a href="${item.link}" target="_blank" rel="noopener" class="card-action-link" title="Open official GCP documentation entry">
-                        <i class="fa-solid fa-up-right-from-square"></i> Source
-                    </a>
-                ` : ''}
+                <div class="card-meta-right">
+                    <button class="card-action-link copy-card-btn" data-id="${item.id}" title="Copy release note text to clipboard">
+                        <i class="fa-regular fa-copy"></i> <span>Copy</span>
+                    </button>
+                    ${item.link ? `
+                        <a href="${item.link}" target="_blank" rel="noopener" class="card-action-link" title="Open official GCP documentation entry">
+                            <i class="fa-solid fa-up-right-from-square"></i> Source
+                        </a>
+                    ` : ''}
+                </div>
             </div>
             <div class="card-content">
                 ${item.description}
@@ -371,4 +387,104 @@ function showToast(message, type = 'info') {
             toast.remove();
         }, 350);
     }, 4000);
+}
+
+// Copy a specific release note card to the system clipboard
+function copyReleaseToClipboard(releaseId, button) {
+    const item = state.releases.find(r => r.id === releaseId);
+    if (!item) return;
+
+    // Helper to strip HTML tags for clean text
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = item.description;
+    const plainText = (tempDiv.textContent || tempDiv.innerText || '').trim();
+
+    // Compile beautiful copy layout
+    const copyString = `[BigQuery Release Note - ${item.date}]
+Type: ${item.type}
+
+${plainText}
+
+Source Link: ${item.link || 'Google Cloud'}`;
+
+    navigator.clipboard.writeText(copyString).then(() => {
+        // Find label and icon for visual update
+        const label = button.querySelector('span');
+        const icon = button.querySelector('i');
+        
+        const origText = label.textContent;
+        const origIcon = icon.className;
+
+        label.textContent = 'Copied!';
+        label.style.color = '#10b981';
+        icon.className = 'fa-solid fa-check';
+        icon.style.color = '#10b981';
+
+        showToast('Release note copied to clipboard!', 'success');
+
+        // Reset visual state after 2 seconds
+        setTimeout(() => {
+            label.textContent = origText;
+            label.style.color = '';
+            icon.className = origIcon;
+            icon.style.color = '';
+        }, 2000);
+    }).catch(err => {
+        console.error('Clipboard copy error:', err);
+        showToast('Failed to copy to clipboard', 'error');
+    });
+}
+
+// Export the currently filtered & sorted releases to a CSV file
+function exportToCSV() {
+    if (state.filteredReleases.length === 0) {
+        showToast('No releases available in the current view to export.', 'info');
+        return;
+    }
+
+    // Escape CSV cell helper
+    const escapeCSVCell = (text) => {
+        if (!text) return '""';
+        // Strip HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = text;
+        let plainText = tempDiv.textContent || tempDiv.innerText || '';
+        // Escape quotes
+        plainText = plainText.replace(/"/g, '""').trim();
+        return `"${plainText}"`;
+    };
+
+    // Prepare headers and records
+    const headers = ['Date', 'Type', 'Description', 'Link'];
+    const rows = state.filteredReleases.map(item => [
+        `"${item.date.replace(/"/g, '""')}"`,
+        `"${item.type.replace(/"/g, '""')}"`,
+        escapeCSVCell(item.description),
+        `"${(item.link || '').replace(/"/g, '""')}"`
+    ]);
+
+    // Build standard CSV file content
+    const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+    ].join('\n');
+
+    // Trigger download in browser
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    
+    // Auto-generate name based on date and filter state
+    const timestamp = new Date().toISOString().split('T')[0];
+    const categorySuffix = state.filters.type !== 'all' ? `_${state.filters.type.toLowerCase()}` : '';
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `bq_releases_export_${timestamp}${categorySuffix}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast(`Exported ${state.filteredReleases.length} release notes to CSV!`, 'success');
 }

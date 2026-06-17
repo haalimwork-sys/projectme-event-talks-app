@@ -749,6 +749,13 @@ body {
     color: var(--text-muted);
 }
 
+.card-meta-right {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+}
+
 .card-action-link {
     color: var(--text-muted);
     font-size: 0.85rem;
@@ -757,6 +764,11 @@ body {
     align-items: center;
     gap: 0.4rem;
     transition: var(--transition-fast);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 0;
 }
 
 .card-action-link:hover {
