@@ -12,6 +12,8 @@ let state = {
 
 // UI Elements
 const els = {
+    themeToggle: document.getElementById('theme-toggle'),
+    themeToggleIcon: document.getElementById('theme-toggle-icon'),
     exportCsvBtn: document.getElementById('export-csv-btn'),
     refreshBtn: document.getElementById('refresh-btn'),
     refreshIcon: document.getElementById('refresh-icon'),
@@ -57,12 +59,16 @@ const typeIcons = {
 
 // Initialize Application
 document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
     setupEventListeners();
     fetchReleases(false); // Load cached version first
 });
 
 // Event Listeners
 function setupEventListeners() {
+    // Theme toggle
+    els.themeToggle.addEventListener('click', toggleTheme);
+
     // Refresh & Export buttons
     els.refreshBtn.addEventListener('click', () => fetchReleases(true));
     els.retryBtn.addEventListener('click', () => fetchReleases(true));
@@ -487,4 +493,38 @@ function exportToCSV() {
     document.body.removeChild(link);
 
     showToast(`Exported ${state.filteredReleases.length} release notes to CSV!`, 'success');
+}
+
+// Initialize theme from localStorage
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+        els.themeToggleIcon.className = 'fa-solid fa-sun';
+    } else {
+        document.body.classList.remove('light-theme');
+        els.themeToggleIcon.className = 'fa-solid fa-moon';
+    }
+}
+
+// Toggle light/dark mode theme
+function toggleTheme() {
+    // Rotate animation triggers on click
+    els.themeToggleIcon.style.transform = 'rotate(360deg) scale(0)';
+    
+    setTimeout(() => {
+        const isLight = document.body.classList.toggle('light-theme');
+        
+        if (isLight) {
+            localStorage.setItem('theme', 'light');
+            els.themeToggleIcon.className = 'fa-solid fa-sun';
+            showToast('Swapped to Light Mode!', 'info');
+        } else {
+            localStorage.setItem('theme', 'dark');
+            els.themeToggleIcon.className = 'fa-solid fa-moon';
+            showToast('Swapped to Dark Mode!', 'info');
+        }
+        
+        els.themeToggleIcon.style.transform = 'rotate(0deg) scale(1)';
+    }, 250);
 }

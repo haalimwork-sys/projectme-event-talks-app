@@ -46,6 +46,80 @@
     --transition-smooth: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Light Mode Theme Overrides */
+body.light-theme {
+    --bg-base: #f8fafc;
+    --bg-surface: rgba(255, 255, 255, 0.7);
+    --bg-surface-solid: #ffffff;
+    --bg-surface-hover: rgba(255, 255, 255, 0.95);
+    --border-color: rgba(15, 23, 42, 0.08);
+    --border-color-hover: rgba(15, 23, 42, 0.16);
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --accent-glow: rgba(2, 132, 199, 0.1);
+    
+    --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
+    --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.06);
+    --shadow-lg: 0 16px 40px rgba(15, 23, 42, 0.1);
+}
+
+/* Adjust overlay background orbs opacity in light mode */
+body.light-theme .glow-orb {
+    opacity: 0.15;
+}
+
+/* Specific elements adjustments for light mode */
+body.light-theme .card-content strong {
+    color: #0f172a;
+}
+
+body.light-theme .card-content code {
+    background: rgba(15, 23, 42, 0.05);
+    color: #0f172a;
+    border-color: rgba(15, 23, 42, 0.08);
+}
+
+body.light-theme .sort-wrapper select option {
+    background-color: #ffffff;
+}
+
+/* Theme Toggle Button Style */
+.theme-toggle {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    font-size: 1.1rem;
+    padding: 0;
+}
+
+.theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    border-color: var(--border-color-hover);
+    transform: scale(1.05);
+}
+
+.theme-toggle i {
+    transition: transform 0.4s ease;
+}
+
+body.light-theme .theme-toggle {
+    background: rgba(15, 23, 42, 0.04);
+}
+
+body.light-theme .theme-toggle:hover {
+    background: rgba(15, 23, 42, 0.08);
+}
+
 /* Reset and Base Styles */
 * {
     box-sizing: border-box;
