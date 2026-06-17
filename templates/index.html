@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigQuery Release Notes Explorer</title>
+    <meta name="description" content="Explore, search, and filter the latest Google Cloud BigQuery release notes in a modern, interactive dashboard.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="glass-bg"></div>
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-logo">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-database logo-db"></i>
+                    <i class="fa-solid fa-bolt logo-lightning"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>BigQuery <span>Releases</span></h1>
+                    <p class="subtitle">Live Feed Explorer</p>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <div id="status-badge" class="status-badge state-idle">
+                    <span class="pulse-dot"></span>
+                    <span class="status-text">Synced</span>
+                </div>
+                <button id="refresh-btn" class="btn btn-primary" title="Sync latest notes from Google Cloud">
+                    <i id="refresh-icon" class="fa-solid fa-rotate"></i>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Section -->
+        <section class="stats-grid">
+            <div class="stat-card" data-stat="all">
+                <div class="stat-icon-wrapper val-all">
+                    <i class="fa-solid fa-list-check"></i>
+                </div>
+                <div class="stat-details">
+                    <h3 id="stat-total">--</h3>
+                    <p>Total Updates</p>
+                </div>
+            </div>
+            <div class="stat-card" data-stat="feature">
+                <div class="stat-icon-wrapper val-feature">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                </div>
+                <div class="stat-details">
+                    <h3 id="stat-features">--</h3>
+                    <p>New Features</p>
+                </div>
+            </div>
+            <div class="stat-card" data-stat="issue">
+                <div class="stat-icon-wrapper val-issue">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                </div>
+                <div class="stat-details">
+                    <h3 id="stat-issues">--</h3>
+                    <p>Issues & Regressions</p>
+                </div>
+            </div>
+            <div class="stat-card" data-stat="deprecated">
+                <div class="stat-icon-wrapper val-deprecated">
+                    <i class="fa-solid fa-ban"></i>
+                </div>
+                <div class="stat-details">
+                    <h3 id="stat-deprecated">--</h3>
+                    <p>Deprecations</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Control Bar (Search & Filter) -->
+        <section class="control-bar">
+            <div class="search-wrapper">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="search-input" placeholder="Search release notes (e.g. Gemini, partition, JSON)..." autocomplete="off">
+                <button id="clear-search-btn" class="clear-search-btn" style="display: none;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="sort-wrapper">
+                <label for="sort-select"><i class="fa-solid fa-sort-amount-down"></i> Sort</label>
+                <select id="sort-select">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Filter Tags -->
+        <section class="filter-section">
+            <span class="filter-label"><i class="fa-solid fa-sliders"></i> Filter by Type:</span>
+            <div class="filter-tags">
+                <button class="filter-tag active" data-filter="all">All Types</button>
+                <button class="filter-tag" data-filter="Feature">
+                    <span class="dot feat-dot"></span>Features
+                </button>
+                <button class="filter-tag" data-filter="Announcement">
+                    <span class="dot ann-dot"></span>Announcements
+                </button>
+                <button class="filter-tag" data-filter="Issue">
+                    <span class="dot issue-dot"></span>Issues
+                </button>
+                <button class="filter-tag" data-filter="Deprecated">
+                    <span class="dot dep-dot"></span>Deprecations
+                </button>
+                <button class="filter-tag" data-filter="Fixed">
+                    <span class="dot fix-dot"></span>Fixes
+                </button>
+                <button class="filter-tag" data-filter="Changed">
+                    <span class="dot change-dot"></span>Changes
+                </button>
+            </div>
+        </section>
+
+        <!-- Main Feed -->
+        <main class="feed-section">
+            <div id="loading-state" class="loading-container">
+                <div class="glow-spinner">
+                    <div></div>
+                    <div></div>
+                </div>
+                <p>Syncing BigQuery Release Notes...</p>
+            </div>
+
+            <div id="error-state" class="error-container" style="display: none;">
+                <div class="error-icon">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h2>Failed to fetch release notes</h2>
+                <p id="error-message">Could not establish connection to the update feed. Please try again.</p>
+                <button id="retry-btn" class="btn btn-secondary">
+                    <i class="fa-solid fa-arrows-rotate"></i> Retry
+                </button>
+            </div>
+
+            <div id="empty-state" class="empty-container" style="display: none;">
+                <div class="empty-icon">
+                    <i class="fa-solid fa-magnifying-glass-minus"></i>
+                </div>
+                <h2>No matches found</h2>
+                <p>Try refining your search query or switching filters to locate updates.</p>
+                <button id="reset-filters-btn" class="btn btn-secondary">Reset Filters</button>
+            </div>
+
+            <div id="releases-timeline" class="releases-timeline" style="display: none;">
+                <!-- Dynamically populated via JS -->
+            </div>
+        </main>
+
+        <!-- Toast Notifications -->
+        <div id="toast-container" class="toast-container"></div>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>Made for BigQuery Developers • Powered by Python Flask & Vanilla Web Technologies</p>
+            <p class="footer-links">
+                <a href="https://docs.cloud.google.com/feeds/bigquery-release-notes.xml" target="_blank" rel="noopener">
+                    <i class="fa-solid fa-rss"></i> Raw Atom XML Feed
+                </a>
+                <span>•</span>
+                <a href="https://cloud.google.com/bigquery/docs/release-notes" target="_blank" rel="noopener">
+                    <i class="fa-solid fa-globe"></i> Official GCP Release Notes
+                </a>
+            </p>
+        </footer>
+    </div>
+
+    <!-- Script -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
